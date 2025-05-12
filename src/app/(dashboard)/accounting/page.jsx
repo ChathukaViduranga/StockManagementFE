@@ -22,7 +22,7 @@ function page() {
       </header>
 
       {/* CARD */}
-      <div className="p-6 flex flex-col items-center w-full md:w-3/4 mx-auto">
+      <div className="p-6 flex flex-col md:flex-row items-center w-full md:w-3/4 max-w-3xl mx-auto">
         {/* summary list */}
         <ul className="w-full md:w-3/4 divide-y divide-sky-300 text-sm font-medium">
           {rows.map(({ label, value }) => (
