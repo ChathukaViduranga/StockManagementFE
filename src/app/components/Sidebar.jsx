@@ -70,9 +70,9 @@ export default function Sidebar() {
         </nav>
 
         <div className="mt-6 flex gap-4 pl-1">
-          <i className="ri-facebook-line text-xl" />
-          <i className="ri-instagram-line text-xl" />
-          <i className="ri-tiktok-line text-xl" />
+          <i className="ri-facebook-line text-xl cursor-pointer" />
+          <i className="ri-instagram-line text-xl cursor-pointer" />
+          <i className="ri-tiktok-line text-xl cursor-pointer" />
         </div>
       </aside>
     </>
