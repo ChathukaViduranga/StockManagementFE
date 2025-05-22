@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
+import { useAuth } from "../providers";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   /* hard‑coded demo creds */
   const USERNAME = "admin";
   const PASSWORD = "secret123";
@@ -20,9 +22,13 @@ export default function LoginPage() {
 
   function handleSubmit(e) {
     e.preventDefault();
+    console.log("Submitted credentials:", form);
     if (form.user === USERNAME && form.pass === PASSWORD) {
+      console.log("Login successful");
+      login(); // Set authentication state
       router.push("/items");
     } else {
+      console.log("Login failed: Invalid credentials");
       setError("Invalid credentials");
     }
   }

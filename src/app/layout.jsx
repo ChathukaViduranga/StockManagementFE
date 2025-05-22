@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Providers } from "./providers";
+import { Providers, AuthProvider } from "./providers";
 
 export const metadata = {
   title: "SR M&M",
@@ -10,7 +10,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <AuthProvider>
+          <Providers>{children}</Providers>
+        </AuthProvider>
       </body>
     </html>
   );

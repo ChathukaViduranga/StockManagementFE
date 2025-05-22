@@ -24,6 +24,7 @@ const nav = [
   { href: "/customers", label: "Customers", icon: UsersRound },
   { href: "/repairs", label: "Repairs", icon: Wrench },
   { href: "/accounting", label: "Accounting", icon: BookOpenCheck },
+  { href: "/expenses", label: "Expenses", icon: DollarSign }, // Added Expenses tab
 ];
 
 export default function Sidebar() {

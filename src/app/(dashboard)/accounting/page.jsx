@@ -1,24 +1,40 @@
-import AccountingChart from "@/app/components/AccountingChart";
+"use client";
 
-export const metadata = { title: "Accounting" };
+import AccountingChart from "@/app/components/AccountingChart";
+import { useState } from "react";
+import { metadata } from "./metadata";
 
 function page() {
+  const [timePeriod, setTimePeriod] = useState("last-week");
+
   const rows = [
     { label: "Income Statement", value: 250000 },
     { label: "Total Expenses", value: 175000 },
     { label: "Net Profit Calculation", value: 75000 },
   ];
+
   return (
     <section className="flex flex-col gap-4">
       {/* HEADER */}
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold tracking-wide">ACCOUNTING</h1>
-        <button
-          className="rounded bg-emerald-400/80 px-3 py-1 text-xs font-semibold text-white
+        <div className="flex items-center gap-4">
+          <select
+            value={timePeriod}
+            onChange={(e) => setTimePeriod(e.target.value)}
+            className="rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
+          >
+            <option value="last-week">Last Week</option>
+            <option value="last-month">Last Month</option>
+            <option value="last-year">Last Year</option>
+          </select>
+          <button
+            className="rounded bg-emerald-400/80 px-3 py-1 text-xs font-semibold text-white
                            shadow hover:bg-emerald-500 active:translate-y-px"
-        >
-          EXPORT
-        </button>
+          >
+            EXPORT
+          </button>
+        </div>
       </header>
 
       {/* CARD */}
