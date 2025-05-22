@@ -10,6 +10,7 @@ export default function NewBillPage() {
     price: "",
     discount: "",
     net: "",
+    salesman: "", // ← NEW
     custId: "",
     custName: "",
     address: "",
@@ -17,6 +18,7 @@ export default function NewBillPage() {
     nic: "",
   });
 
+  /* ---------------- helpers ---------------- */
   function handleChange(e) {
     const { name, value } = e.target;
     setBill({ ...bill, [name]: value });
@@ -28,15 +30,15 @@ export default function NewBillPage() {
     return (p - d).toFixed(2);
   }
 
-  /* ---------------- make PDF ---------------- */
+  /* ---------------- generate PDF ---------------- */
   function handleGenerate() {
-    const doc = new jsPDF({ unit: "pt" }); // points
+    const doc = new jsPDF({ unit: "pt" });
 
-    /* title */
+    // title
     doc.setFontSize(16).setFont("helvetica", "bold");
     doc.text("SR Mobile & Music – Invoice / Bill", 40, 50);
 
-    /* item details */
+    // rows
     doc.setFontSize(12).setFont("helvetica", "normal");
     const startY = 90;
     const rowGap = 50;
@@ -46,6 +48,7 @@ export default function NewBillPage() {
       ["Price (Rs)", bill.price],
       ["Discount (Rs)", bill.discount],
       ["Net Amount (Rs)", calcNet()],
+      ["Salesman ID", bill.salesman], // ← NEW
       ["Customer ID", bill.custId],
       ["Customer Name", bill.custName],
       ["Address", bill.address],
@@ -59,7 +62,7 @@ export default function NewBillPage() {
       doc.text(`${value}`, 200, y);
     });
 
-    /* footer */
+    // footer
     doc.setFontSize(10);
     doc.text(
       `Generated on ${new Date().toLocaleString()}`,
@@ -67,15 +70,17 @@ export default function NewBillPage() {
       startY + rows.length * rowGap + 30
     );
 
-    /* download */
+    // download
     doc.save(`bill_${bill.itemNo || "new"}.pdf`);
 
+    // reset form
     setBill({
       itemNo: "",
       itemName: "",
       price: "",
       discount: "",
       net: "",
+      salesman: "",
       custId: "",
       custName: "",
       address: "",
@@ -84,9 +89,10 @@ export default function NewBillPage() {
     });
   }
 
+  /* ---------------- UI ---------------- */
   return (
     <section className="flex flex-col items-center gap-6">
-      <h1 className="text-2xl font-extrabold tracking-wide">NEW BILL</h1>
+      <h1 className="text-2xl font-extrabold tracking-wide">NEW BILL</h1>
 
       <form
         onSubmit={(e) => {
@@ -95,7 +101,7 @@ export default function NewBillPage() {
         }}
         className="grid w-full max-w-xl grid-cols-1 gap-4 md:grid-cols-2"
       >
-        {/* item fields */}
+        {/* Item details */}
         <Input
           label="Item No"
           name="itemNo"
@@ -108,6 +114,7 @@ export default function NewBillPage() {
           value={bill.itemName}
           onChange={handleChange}
         />
+
         <Input
           label="Price (Rs)"
           name="price"
@@ -128,9 +135,19 @@ export default function NewBillPage() {
             setBill((b) => ({ ...b, net: calcNet() }));
           }}
         />
+
+        {/* NEW Salesman ID */}
+        <Input
+          label="Salesman ID"
+          name="salesman"
+          value={bill.salesman}
+          onChange={handleChange}
+        />
+
+        {/* Net amount (read-only) */}
         <Input label="Net Amount (Rs)" name="net" value={calcNet()} readOnly />
 
-        {/* customer info */}
+        {/* Customer info */}
         <Input
           label="Customer ID"
           name="custId"
@@ -156,7 +173,7 @@ export default function NewBillPage() {
           onChange={handleChange}
         />
 
-        {/* address full width */}
+        {/* Address (full width) */}
         <div className="md:col-span-2">
           <label className="mb-1 block text-sm font-medium">
             Customer Address
@@ -170,7 +187,7 @@ export default function NewBillPage() {
           />
         </div>
 
-        {/* submit */}
+        {/* Generate button */}
         <button
           type="submit"
           className="mt-2 w-40 rounded bg-sky-600 py-2 text-sm font-semibold text-white hover:bg-sky-700 md:col-span-2"
@@ -182,7 +199,7 @@ export default function NewBillPage() {
   );
 }
 
-/* ------------- tiny reusable input component ------------- */
+/* -------- reusable input component -------- */
 function Input({ label, type = "text", ...props }) {
   return (
     <div>
