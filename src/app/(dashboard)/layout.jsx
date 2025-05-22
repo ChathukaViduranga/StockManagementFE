@@ -3,20 +3,28 @@
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../providers";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function DashboardLayout({ children }) {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, router]);
 
+  // Prevent hydration mismatch by not rendering until client-side
+  if (!mounted) {
+    return null;
+  }
+
+  // Only render the layout if authenticated
   if (!isAuthenticated) {
-    return null; // Optionally, show a loading spinner here
+    return null;
   }
 
   return (

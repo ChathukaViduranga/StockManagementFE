@@ -26,11 +26,21 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isAuthenticated") === "true";
-    setIsAuthenticated(loggedIn);
+    const checkAuth = () => {
+      if (typeof window !== "undefined") {
+        const loggedIn = localStorage.getItem("isAuthenticated") === "true";
+        setIsAuthenticated(loggedIn);
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
   const login = () => {
@@ -43,6 +53,11 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false);
     router.push("/login");
   };
+
+  // Don't render children until initial auth check is complete
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
