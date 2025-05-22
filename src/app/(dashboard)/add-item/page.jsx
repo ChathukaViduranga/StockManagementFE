@@ -5,6 +5,7 @@ import Image from "next/image";
 
 export default function AddItemPage() {
   const [form, setForm] = useState({
+    itemNo: "",
     name: "",
     price: "",
     cost: "",
@@ -30,9 +31,9 @@ export default function AddItemPage() {
   function handleSubmit(e) {
     e.preventDefault();
 
-    // TODO: replace with real API / DB call
     console.table({
-      Item: form.name,
+      "Item No": form.itemNo,
+      Name: form.name,
       Price: form.price,
       Cost: form.cost,
       Description: form.desc,
@@ -42,6 +43,7 @@ export default function AddItemPage() {
     alert("Item saved (see console). Resetting form.");
     URL.revokeObjectURL(form.preview);
     setForm({
+      itemNo: "",
       name: "",
       price: "",
       cost: "",
@@ -54,69 +56,51 @@ export default function AddItemPage() {
   return (
     <section className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
       <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-center">
-        ADD ITEM
+        ADD ITEM
       </h1>
 
-      {/* card */}
       <div className="w-full max-w-2xl rounded-lg border border-sky-200 bg-white p-8 shadow-sm">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* NAME */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Item Name*</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
-              placeholder="e.g. iPhone 15 Pro"
-            />
-          </div>
+          {/* ITEM NO */}
+          <Input
+            label="Item No*"
+            name="itemNo"
+            value={form.itemNo}
+            onChange={handleChange}
+            placeholder="e.g. 001"
+            required
+          />
 
-          {/* NAME */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Item Name*</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
-              placeholder="e.g. iPhone 15 Pro"
-            />
-          </div>
+          {/* ITEM NAME */}
+          <Input
+            label="Item Name*"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder="e.g. iPhone 15 Pro"
+            required
+          />
 
           {/* PRICE & COST */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Selling Price (Rs)*
-              </label>
-              <input
-                name="price"
-                type="number"
-                min="0"
-                value={form.price}
-                onChange={handleChange}
-                required
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Cost (Rs)*
-              </label>
-              <input
-                name="cost"
-                type="number"
-                min="0"
-                value={form.cost}
-                onChange={handleChange}
-                required
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
-              />
-            </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Input
+              label="Selling Price (Rs)*"
+              name="price"
+              type="number"
+              min="0"
+              value={form.price}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Cost (Rs)*"
+              name="cost"
+              type="number"
+              min="0"
+              value={form.cost}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* DESCRIPTION */}
@@ -134,9 +118,9 @@ export default function AddItemPage() {
             />
           </div>
 
-          {/* IMAGE UPLOAD with coloured button */}
+          {/* IMAGE UPLOAD */}
           <div className="flex flex-col gap-3">
-            <label className="text-sm font-medium">Item Image</label>
+            <label className="text-sm font-medium">Item Image</label>
             <input
               name="file"
               type="file"
@@ -166,10 +150,24 @@ export default function AddItemPage() {
             type="submit"
             className="self-start rounded bg-[#0d1a38] px-6 py-2 text-sm font-semibold tracking-wide text-white hover:opacity-90"
           >
-            Save Item
+            Save Item
           </button>
         </form>
       </div>
     </section>
+  );
+}
+
+/* reusable text/number input */
+function Input({ label, type = "text", ...props }) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium">{label}</label>
+      <input
+        type={type}
+        {...props}
+        className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
+      />
+    </div>
   );
 }
