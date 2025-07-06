@@ -1,58 +1,71 @@
 "use client";
+
 import { useState } from "react";
 
-export default function NewRepairForm({ onAdd }) {
-  const [form, setForm] = useState({ no: "", customer: "", name: "" });
+export default function NewRepairForm({ onAdd, saving }) {
+  const [form, setForm] = useState({
+    customerId: "",
+    deviceName: "",
+    status: "Pending",
+  });
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  }
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.no || !form.customer || !form.name) return;
+    if (!form.customerId || !form.deviceName) return;
 
-    onAdd({
-      id: Date.now(), // unique row key
-      no: form.no,
-      customer: form.customer,
-      name: form.name,
-      status: "Pending",
+    await onAdd({
+      customer: { id: Number(form.customerId) },
+      deviceName: form.deviceName,
+      status: form.status,
     });
 
-    setForm({ no: "", customer: "", name: "" });
-  }
+    setForm({ customerId: "", deviceName: "", status: "Pending" });
+  };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid grid-cols-1 gap-4 md:grid-cols-4 items-end"
+      className="grid items-end gap-4 md:grid-cols-4"
     >
       <Input
-        label="Repair ID"
-        name="no"
-        value={form.no}
+        label="Customer ID*"
+        name="customerId"
+        value={form.customerId}
         onChange={handleChange}
+        type="number"
+        min="1"
+        required
       />
       <Input
-        label="Customer ID"
-        name="customer"
-        value={form.customer}
+        label="Device Name*"
+        name="deviceName"
+        value={form.deviceName}
         onChange={handleChange}
+        required
       />
-      <Input
-        label="Device Name"
-        name="name"
-        value={form.name}
-        onChange={handleChange}
-      />
-
+      <div>
+        <label className="mb-1 block text-xs font-medium">Status</label>
+        <select
+          name="status"
+          value={form.status}
+          onChange={handleChange}
+          className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
+        >
+          {["Pending", "In_Progress", "Completed", "Delivered"].map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </div>
       <button
         type="submit"
-        className="rounded bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+        disabled={saving}
+        className="rounded bg-sky-600 px-4 py-2 text-sm font-semibold text-white
+                   hover:bg-sky-700 disabled:opacity-60"
       >
-        Add Repair
+        {saving ? "Saving…" : "Add Repair"}
       </button>
     </form>
   );

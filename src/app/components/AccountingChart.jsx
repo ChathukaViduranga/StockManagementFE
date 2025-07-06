@@ -7,18 +7,11 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-/* colours (sky‑shades – tweak as you like) */
+/* colours (sky shades – tweak as needed) */
 const COLORS = [
   "hsl(var(--chart-1))", // Income
   "hsl(var(--chart-2))", // Expenses
   "hsl(var(--chart-3))", // Profit
-];
-
-/* data */
-const data = [
-  { name: "Income", value: 250_000 },
-  { name: "Expenses", value: 175_000 },
-  { name: "Profit", value: 75_000 },
 ];
 
 /* minimal ChartConfig so ChartContainer is happy */
@@ -29,7 +22,13 @@ const chartConfig = {
   profit: { label: "Profit" },
 };
 
-export default function AccountingPieChart() {
+export default function AccountingChart({ income, expenses, profit }) {
+  const data = [
+    { name: "Income", value: income },
+    { name: "Expenses", value: expenses },
+    { name: "Profit", value: profit },
+  ];
+
   return (
     <ChartContainer
       config={chartConfig}
@@ -38,7 +37,7 @@ export default function AccountingPieChart() {
       <PieChart>
         <ChartTooltip
           cursor={false}
-          content={<ChartTooltipContent hideLabel />}
+          content={<ChartTooltipContent hideLabel prefix="Rs " />}
         />
         <Pie
           data={data}
