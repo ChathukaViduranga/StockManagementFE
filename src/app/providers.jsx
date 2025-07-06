@@ -26,6 +26,7 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [role, setRole] = useState(null); // 'admin' | 'worker' | null
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -33,7 +34,9 @@ export function AuthProvider({ children }) {
     const checkAuth = () => {
       if (typeof window !== "undefined") {
         const loggedIn = localStorage.getItem("isAuthenticated") === "true";
+        const storedRole = localStorage.getItem("role");
         setIsAuthenticated(loggedIn);
+        setRole(storedRole);
         setIsLoading(false);
       }
     };
@@ -43,14 +46,18 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
-  const login = () => {
+  const login = (userRole) => {
     localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("role", userRole);
     setIsAuthenticated(true);
+    setRole(userRole);
   };
 
   const logout = () => {
     localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("role");
     setIsAuthenticated(false);
+    setRole(null);
     router.push("/login");
   };
 
@@ -60,7 +67,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, role, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

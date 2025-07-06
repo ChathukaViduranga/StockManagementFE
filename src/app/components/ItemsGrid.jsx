@@ -120,6 +120,7 @@ export default function ItemsGrid() {
                 alt={selected.name}
                 fill
                 className="object-contain rounded border"
+                unoptimized
               />
             </div>
 

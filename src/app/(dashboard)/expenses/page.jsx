@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { getExpenses, createExpense } from "@/utils/expensesService";
+import { useAuth } from "../../providers";
+import { useRouter } from "next/navigation";
 
 const categories = [
   "Salesmen Wages",
@@ -27,6 +29,15 @@ const columns = [
 ];
 
 export default function ExpensesPage() {
+  const { role } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (role !== "admin") {
+      router.replace("/items");
+    }
+  }, [role, router]);
+  if (role !== "admin") return null;
+
   /* form + data state */
   const [form, setForm] = useState({
     amount: "",

@@ -16,20 +16,28 @@ import {
   Menu,
 } from "lucide-react";
 import clsx from "clsx";
+import { useAuth } from "../providers";
+
 const nav = [
   { href: "/add-item", label: "Add Items", icon: Package },
   { href: "/new-bill", label: "New Bill", icon: DollarSign },
   { href: "/items", label: "Items Available", icon: Home },
-  { href: "/sales", label: "Daily Sales", icon: ShoppingCart },
+  { href: "/sales", label: "Daily Sales", icon: ShoppingCart, adminOnly: true },
   { href: "/customers", label: "Customers", icon: UsersRound },
   { href: "/repairs", label: "Repairs", icon: Wrench },
-  { href: "/accounting", label: "Accounting", icon: BookOpenCheck },
-  { href: "/expenses", label: "Expenses", icon: DollarSign }, // Added Expenses tab
+  {
+    href: "/accounting",
+    label: "Accounting",
+    icon: BookOpenCheck,
+    adminOnly: true,
+  },
+  { href: "/expenses", label: "Expenses", icon: DollarSign, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { role } = useAuth();
 
   return (
     <>
@@ -50,24 +58,26 @@ export default function Sidebar() {
         <h1 className="mb-8 text-xl font-semibold">SR Mobile &amp; Music</h1>
 
         <nav className="flex-1 space-y-1">
-          {nav.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium
-                ${
-                  active
-                    ? "bg-sky-300 text-gray-900"
-                    : "text-gray-700 hover:bg-sky-200"
-                }`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            );
-          })}
+          {nav
+            .filter((item) => !(item.adminOnly && role !== "admin"))
+            .map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium
+                  ${
+                    active
+                      ? "bg-sky-300 text-gray-900"
+                      : "text-gray-700 hover:bg-sky-200"
+                  }`}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="mt-6 flex gap-4 pl-1">

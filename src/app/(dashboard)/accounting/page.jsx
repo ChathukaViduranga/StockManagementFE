@@ -13,8 +13,19 @@ import {
   getLastMonthExpense,
   getLastYearExpense,
 } from "@/utils/expensesService"; // ← NEW imports
+import { useAuth } from "../../providers";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
+  const { role } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (role !== "admin") {
+      router.replace("/items");
+    }
+  }, [role, router]);
+  if (role !== "admin") return null;
+
   const [period, setPeriod] = useState("last-week");
   const [income, setIncome] = useState(null);
   const [expense, setExpense] = useState(null);

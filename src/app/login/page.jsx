@@ -21,13 +21,21 @@ export default function LoginPage() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (form.user === USERNAME && form.pass === PASSWORD) {
+    if (form.user === "admin" && form.pass === "secret123") {
       if (form.remember) {
         localStorage.setItem("rememberUser", "true");
       } else {
         localStorage.removeItem("rememberUser");
       }
-      login();
+      login("admin");
+      router.push("/items");
+    } else if (form.user === "worker" && form.pass === "secret123") {
+      if (form.remember) {
+        localStorage.setItem("rememberUser", "true");
+      } else {
+        localStorage.removeItem("rememberUser");
+      }
+      login("worker");
       router.push("/items");
     } else {
       setError("Invalid credentials");
