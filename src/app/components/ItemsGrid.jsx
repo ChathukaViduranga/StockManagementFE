@@ -116,7 +116,15 @@ export default function ItemsGrid() {
 
             <div className="relative h-56 w-full">
               <Image
-                src={selected.img}
+                src={
+                  selected.img.startsWith("/api/uploads/") ||
+                  selected.img.startsWith("http")
+                    ? selected.img
+                    : selected.img.startsWith("/images/") ||
+                      selected.img.startsWith("/assets/")
+                    ? selected.img
+                    : "/placeholder.png"
+                }
                 alt={selected.name}
                 fill
                 className="object-contain rounded border"

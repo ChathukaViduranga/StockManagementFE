@@ -16,14 +16,16 @@ export async function POST(request) {
   try {
     const { file, buffer } = await fileFromRequest(request);
 
-    const dir = join(process.cwd(), "public/images");
-    mkdirSync(dir, { recursive: true }); // ensure folder exists
+    // Save to /uploads (outside /public)
+    const dir = join(process.cwd(), "uploads");
+    mkdirSync(dir, { recursive: true });
 
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
     const filepath = join(dir, filename);
     writeFileSync(filepath, buffer);
 
-    return NextResponse.json({ path: `/images/${filename}` });
+    // Return API route URL for serving the image
+    return NextResponse.json({ path: `/api/uploads/${filename}` });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "upload failed" }, { status: 500 });
