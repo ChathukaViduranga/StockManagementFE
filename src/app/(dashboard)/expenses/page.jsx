@@ -1,7 +1,10 @@
+// src/app/(dashboard)/expenses/page.jsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { DataGrid } from "@mui/x-data-grid";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { getExpenses, createExpense } from "@/utils/expensesService";
 import { useAuth } from "../../providers";
 import { useRouter } from "next/navigation";
@@ -16,12 +19,14 @@ const categories = [
 
 /* ─────────── grid columns ─────────── */
 const columns = [
-  { field: "id", headerName: "ID", width: 100 },
+  { field: "id", headerName: "ID", width: 90 },
   {
     field: "amount",
     headerName: "Amount (Rs)",
-    width: 150,
+    width: 140,
     type: "number",
+    valueFormatter: ({ value }) =>
+      value != null ? Number(value).toLocaleString("en-LK") : "",
   },
   { field: "description", headerName: "Description", flex: 1, minWidth: 200 },
   { field: "category", headerName: "Category", width: 200 },
@@ -32,88 +37,90 @@ export default function ExpensesPage() {
   const { role } = useAuth();
   const router = useRouter();
   useEffect(() => {
-    if (role !== "admin") {
-      router.replace("/items");
-    }
+    if (role !== "admin") router.replace("/items");
   }, [role, router]);
   if (role !== "admin") return null;
 
-  /* form + data state */
+  /* state */
   const [form, setForm] = useState({
     amount: "",
     description: "",
     category: categories[0],
-    date: new Date().toISOString().split("T")[0], // yyyy-mm-dd
+    date: new Date().toISOString().split("T")[0],
   });
   const [expenses, setExpenses] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
 
-  /* ───── fetch all once ───── */
+  /* fetch */
   const loadExpenses = async () => {
-    try {
-      const data = await getExpenses();
-      setExpenses(
-        data.map((e) => ({
-          id: e.id,
-          amount: e.amount,
-          description: e.description,
-          category: e.category,
-          date: e.date,
-        }))
-      );
-    } catch (err) {
-      console.error("Error loading expenses:", err);
-    }
+    const data = await getExpenses();
+    setExpenses(
+      data.map((e) => ({
+        id: e.id,
+        amount: e.amount,
+        description: e.description,
+        category: e.category,
+        date: e.date,
+      }))
+    );
   };
-
   useEffect(() => {
-    loadExpenses();
+    loadExpenses().catch(console.error);
   }, []);
 
-  /* ───── form handlers ───── */
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  }
+  /* form handlers */
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.amount || !form.description) return;
-
     try {
       setSaving(true);
       await createExpense({
+        ...form,
         amount: parseFloat(form.amount),
-        description: form.description,
-        category: form.category,
-        date: form.date,
       });
-      await loadExpenses(); // refresh list
+      await loadExpenses();
       setForm({
         amount: "",
         description: "",
         category: categories[0],
         date: new Date().toISOString().split("T")[0],
       });
-    } catch (err) {
-      console.error("Failed to add expense:", err);
     } finally {
       setSaving(false);
     }
-  }
+  };
 
-  /* optional: sort newest first */
-  const sortedExpenses = useMemo(
-    () => [...expenses].sort((a, b) => b.id - a.id),
-    [expenses]
-  );
+  /* search filter */
+  const filtered = useMemo(() => {
+    if (!query.trim()) return expenses;
+    const q = query.toLowerCase();
+    return expenses.filter(
+      (e) =>
+        e.id.toString().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q)
+    );
+  }, [query, expenses]);
 
-  /* ───── UI ───── */
+  /* export */
+  const exportExcel = () => {
+    const rows = filtered.map(({ id, ...rest }) => rest);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+    XLSX.writeFile(wb, "expenses.xlsx");
+  };
+
+  /* UI */
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-extrabold tracking-wide">EXPENSES</h1>
 
-      {/* new-expense form */}
+      {/* add form */}
       <div className="rounded-lg border border-sky-200 bg-white p-4 shadow-sm">
         <form
           onSubmit={handleSubmit}
@@ -143,8 +150,8 @@ export default function ExpensesPage() {
               onChange={handleChange}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
             >
-              {categories.map((cat) => (
-                <option key={cat}>{cat}</option>
+              {categories.map((c) => (
+                <option key={c}>{c}</option>
               ))}
             </select>
           </div>
@@ -166,11 +173,29 @@ export default function ExpensesPage() {
         </form>
       </div>
 
-      {/* expenses table */}
+      {/* toolbar */}
+      <div className="flex justify-between items-center">
+        <input
+          type="text"
+          placeholder="Search by ID, description, category…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-80 rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
+        />
+        <button
+          onClick={exportExcel}
+          className="rounded-full bg-sky-600 p-2 text-white hover:bg-sky-700"
+          title="Download Excel"
+        >
+          <Download size={18} />
+        </button>
+      </div>
+
+      {/* table */}
       <div className="rounded-lg border border-sky-200 bg-white shadow-sm">
         <div style={{ height: 420, width: "100%" }}>
           <DataGrid
-            rows={sortedExpenses}
+            rows={filtered}
             columns={columns}
             hideFooter
             disableColumnMenu

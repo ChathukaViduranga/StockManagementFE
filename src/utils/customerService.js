@@ -25,6 +25,18 @@ export const getCustomerById = async (id) => {
   }
 };
 
+export const getCustomerByContactNumber = async (contactNumber) => {
+  try {
+    const res = await axios.get(
+      `${API}/customers/contact-number/${contactNumber}`
+    );
+    return res.data; // <-- single object
+  } catch (err) {
+    console.error("Error fetching customer:", err);
+    throw err;
+  }
+};
+
 /* --------------- POST create customer ------------- */
 export const createCustomer = async (payload) => {
   try {

@@ -1,3 +1,4 @@
+// src/app/(dashboard)/bills/new/page.jsx
 "use client";
 
 import { useState } from "react";
@@ -5,14 +6,14 @@ import { jsPDF } from "jspdf";
 import { RefreshCcw } from "lucide-react";
 
 import { getItemById, changeItemStatus } from "@/utils/ItemService";
-import { getCustomerById } from "@/utils/customerService";
 import {
-  getRepairById,
-  changeRepairStatus, // already imported earlier
-} from "@/utils/repairService";
+  getCustomerById,
+  getCustomerByContactNumber,
+} from "@/utils/customerService";
+import { getRepairById, changeRepairStatus } from "@/utils/repairService";
 import { createItemBill, createRepairBill } from "@/utils/billService";
 
-/* ── helper to clear form ── */
+/* ---------- helper ---------- */
 const freshBill = () => ({
   price: "",
   discount: "",
@@ -37,10 +38,11 @@ export default function NewBillPage() {
   const resetForm = () => setBill(freshBill());
   const handleChange = (e) =>
     setBill({ ...bill, [e.target.name]: e.target.value });
+
   const calcNet = () =>
     (Number(bill.price || 0) - Number(bill.discount || 0)).toFixed(2);
 
-  /* ───── fetch helpers ───── */
+  /* ---------- fetch helpers ---------- */
   const handleFetchItem = async () => {
     if (!bill.itemNo) return;
     try {
@@ -76,6 +78,16 @@ export default function NewBillPage() {
     }
   };
 
+  const handleFetchCustomerByMobile = async () => {
+    if (!bill.mobile) return;
+    try {
+      const c = await getCustomerByContactNumber(bill.mobile);
+      fillCustomer(c);
+    } catch {
+      alert("Customer not found");
+    }
+  };
+
   const handleFetchRepair = async () => {
     if (!bill.repairNo) return;
     try {
@@ -90,19 +102,20 @@ export default function NewBillPage() {
     }
   };
 
-  /* ───── persist + PDF ───── */
+  /* ---------- persist + PDF ---------- */
   async function handleGenerate() {
     const netAmount = Number(calcNet());
     const price = Number(bill.price || 0);
     const discount = Number(bill.discount || 0);
     const profit =
-      type === "ITEM" ? netAmount - Number(bill.itemCost || 0) : netAmount;
+      type === "ITEM"
+        ? netAmount - Number(bill.itemCost || 0)
+        : netAmount * 0.2;
 
     try {
       setSaving(true);
 
       if (type === "ITEM") {
-        /* 1️⃣  create item bill */
         await createItemBill({
           customerId: Number(bill.custId),
           itemId: Number(bill.itemNo),
@@ -112,11 +125,8 @@ export default function NewBillPage() {
           netAmount,
           profit,
         });
-
-        /* 2️⃣  mark item OUT_OF_STOCK */
         await changeItemStatus(Number(bill.itemNo), "OUT_OF_STOCK");
       } else {
-        /* 1️⃣  create repair bill */
         await createRepairBill({
           customerId: Number(bill.custId),
           repairId: Number(bill.repairNo),
@@ -126,8 +136,6 @@ export default function NewBillPage() {
           netAmount,
           profit,
         });
-
-        /* 2️⃣  mark repair Delivered */
         await changeRepairStatus(Number(bill.repairNo), "Delivered");
       }
     } catch (err) {
@@ -138,17 +146,28 @@ export default function NewBillPage() {
       setSaving(false);
     }
 
-    /* ------- Generate PDF (unchanged) ------- */
+    /* ---------- PDF generation (new layout) ---------- */
     const doc = new jsPDF({ unit: "pt" });
-    doc
-      .setFontSize(16)
-      .setFont("helvetica", "bold")
-      .text(
-        `SR Mobile & Music – ${type === "ITEM" ? "Item Bill" : "Repair Bill"}`,
-        40,
-        50
-      );
 
+    // Header
+    doc.setFontSize(18).setFont("helvetica", "bold");
+    doc.text("SR Mobile & Music", 40, 50);
+
+    doc.setFontSize(11).setFont("helvetica", "normal");
+    doc.text("123,  Colombo Road, Minuwangoda • 077-5833-088", 40, 68);
+
+    // Coloured bar
+    doc.setDrawColor("#0ea5e9");
+    doc.setFillColor("#0ea5e9");
+    doc.rect(40, 85, 515, 22, "F");
+    doc.setFontSize(12).setFont("helvetica", "bold").setTextColor("#ffffff");
+    doc.text(type === "ITEM" ? "ITEM BILL" : "REPAIR BILL", 48, 100);
+    doc.text(new Date().toLocaleDateString("en-GB"), 530, 100, {
+      align: "right",
+    });
+    doc.setTextColor("#000000");
+
+    // Body rows
     const rows = [
       ...(type === "ITEM"
         ? [
@@ -159,10 +178,9 @@ export default function NewBillPage() {
             ["Repair No", bill.repairNo],
             ["Device", bill.deviceName],
           ]),
-      ["Price (Rs)", price],
-      ["Discount (Rs)", discount],
-      ["Net Amount (Rs)", netAmount],
-      ["Profit (Rs)", profit],
+      ["Price (Rs)", price.toLocaleString("en-LK")],
+      ["Discount (Rs)", discount.toLocaleString("en-LK")],
+      ["Net Amount (Rs)", netAmount.toLocaleString("en-LK")],
       ["Salesman ID", bill.salesman],
       ["Customer ID", bill.custId],
       ["Customer Name", bill.custName],
@@ -170,25 +188,30 @@ export default function NewBillPage() {
       ["Mobile", bill.mobile],
       ["NIC", bill.nic],
     ];
-    let y = 90;
-    doc.setFontSize(12);
-    rows.forEach(([l, v]) => {
-      doc.text(`${l}: ${v}`, 40, y);
+
+    let y = 125;
+    rows.forEach(([label, val]) => {
+      doc.setFont("helvetica", "bold").text(`${label}:`, 40, y);
+      doc.setFont("helvetica", "normal").text(String(val), 160, y);
       y += 22;
     });
-    doc
-      .setFontSize(10)
-      .text(`Generated ${new Date().toLocaleString()}`, 40, y + 10);
+
+    // Footer
+    doc.setDrawColor("#d1d5db");
+    doc.line(40, y + 6, 555, y + 6);
+    doc.setFontSize(10);
+    doc.text(`Generated on ${new Date().toLocaleString()}`, 40, y + 20);
 
     doc.save(
       type === "ITEM"
         ? `item_${bill.itemNo || "new"}.pdf`
         : `repair_${bill.repairNo || "new"}.pdf`
     );
+
     resetForm();
   }
 
-  /* ───── UI ───── */
+  /* ---------- UI ---------- */
   return (
     <section className="flex flex-col items-center gap-6">
       <h1 className="text-2xl font-extrabold tracking-wide">NEW BILL</h1>
@@ -219,7 +242,6 @@ export default function NewBillPage() {
         }}
         className="grid w-full max-w-xl grid-cols-1 gap-4 md:grid-cols-2"
       >
-        {/* Item / Repair section */}
         {type === "ITEM" ? (
           <>
             <InputWithReload
@@ -285,7 +307,7 @@ export default function NewBillPage() {
         />
         <Input label="Net Amount (Rs)" value={calcNet()} readOnly />
 
-        {/* Customer with reload */}
+        {/* Customer */}
         <InputWithReload
           label="Customer ID"
           name="custId"
@@ -294,17 +316,18 @@ export default function NewBillPage() {
           onReload={handleFetchCustomer}
           required
         />
+        <InputWithReload
+          label="Mobile No"
+          name="mobile"
+          value={bill.mobile}
+          onChange={handleChange}
+          onReload={handleFetchCustomerByMobile}
+          required
+        />
         <Input
           label="Customer Name"
           name="custName"
           value={bill.custName}
-          onChange={handleChange}
-          required
-        />
-        <Input
-          label="Mobile No"
-          name="mobile"
-          value={bill.mobile}
           onChange={handleChange}
           required
         />
@@ -342,7 +365,7 @@ export default function NewBillPage() {
   );
 }
 
-/* ─── reusable inputs ─── */
+/* ---------- reusable inputs ---------- */
 function Input({ label, type = "text", ...props }) {
   return (
     <div>

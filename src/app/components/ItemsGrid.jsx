@@ -1,3 +1,4 @@
+// src/app/components/ItemsGrid.jsx
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -12,8 +13,10 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { getAvailableItems } from "@/utils/ItemService";
+import * as XLSX from "xlsx";
+import { Download } from "lucide-react"; // ← icon
 
-/* --------- grid columns --------- */
+/* ────────── grid columns ────────── */
 const columns = [
   { field: "no", headerName: "Item No", width: 110 },
   { field: "name", headerName: "Item Name", flex: 1, minWidth: 180 },
@@ -27,30 +30,29 @@ export default function ItemsGrid() {
   const [open, setOpen] = useState(false);
   const [selected, setSelect] = useState(null);
 
-  /* ---- fetch available items on mount ---- */
+  /* fetch items */
   useEffect(() => {
     (async () => {
       try {
-        const data = await getAvailableItems(); // ← API call
-
-        // map API → grid shape
-        const mapped = data.map((item) => ({
-          id: item.id,
-          no: item.id, // or `item.itemNo` if you keep string pk
-          name: item.name,
-          price: item.sellingPrice,
-          cost: item.cost,
-          img: item.imagePath || "/placeholder.png",
-          desc: item.description,
-        }));
-        setRows(mapped);
+        const data = await getAvailableItems();
+        setRows(
+          data.map((it) => ({
+            id: it.id,
+            no: it.id,
+            name: it.name,
+            price: it.sellingPrice,
+            cost: it.cost,
+            img: it.imagePath || "/placeholder.png",
+            desc: it.description,
+          }))
+        );
       } catch (err) {
         console.error("Failed to load items:", err);
       }
     })();
   }, []);
 
-  /* ---- live filtering ---- */
+  /* filter */
   const filteredRows = useMemo(() => {
     if (!search.trim()) return rows;
     const q = search.toLowerCase();
@@ -59,15 +61,19 @@ export default function ItemsGrid() {
     );
   }, [search, rows]);
 
-  function handleRowClick(params) {
-    setSelect(params.row);
-    setOpen(true);
+  /* export */
+  function exportToExcel() {
+    const data = filteredRows.map(({ id, ...rest }) => rest);
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Items");
+    XLSX.writeFile(wb, "available_items.xlsx");
   }
 
   return (
     <>
-      {/* search bar */}
-      <div className="mb-2 flex justify-end">
+      {/* toolbar */}
+      <div className="mb-2 flex items-center justify-between">
         <input
           type="text"
           placeholder="Search by ID or name…"
@@ -75,9 +81,16 @@ export default function ItemsGrid() {
           onChange={(e) => setSearch(e.target.value)}
           className="w-60 rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
         />
+        <button
+          onClick={exportToExcel}
+          className="rounded-full bg-sky-600 p-2 text-white hover:bg-sky-700"
+          title="Download Excel"
+        >
+          <Download size={18} />
+        </button>
       </div>
 
-      {/* data grid */}
+      {/* grid */}
       <div style={{ height: 420, width: "100%" }}>
         <DataGrid
           rows={filteredRows}
@@ -85,7 +98,10 @@ export default function ItemsGrid() {
           hideFooter
           disableColumnMenu
           disableRowSelectionOnClick
-          onRowClick={handleRowClick}
+          onRowClick={(p) => {
+            setSelect(p.row);
+            setOpen(true);
+          }}
           headerHeight={46}
           rowHeight={44}
           sx={{

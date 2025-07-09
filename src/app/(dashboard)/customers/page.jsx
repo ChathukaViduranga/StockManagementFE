@@ -1,8 +1,11 @@
+// src/app/(dashboard)/customers/page.jsx
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { getCustomers, createCustomer } from "@/utils/customerService";
+import * as XLSX from "xlsx";
+import { Download } from "lucide-react"; // ⬅ icon
 
 /* ------------ grid columns ------------ */
 const columns = [
@@ -14,7 +17,6 @@ const columns = [
 ];
 
 export default function CustomersPage() {
-  /* data + ui state */
   const [rows, setRows] = useState([]);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -29,18 +31,19 @@ export default function CustomersPage() {
     address: "",
   });
 
-  /* ── fetch customers once ── */
+  /* fetch customers */
   const loadCustomers = async () => {
     const data = await getCustomers();
-    const formatted = data.map((c) => ({
-      id: c.id,
-      custId: c.id,
-      name: c.name,
-      phone: c.contactNo,
-      nic: c.nic,
-      address: c.address,
-    }));
-    setRows(formatted);
+    setRows(
+      data.map((c) => ({
+        id: c.id,
+        custId: c.id,
+        name: c.name,
+        phone: c.contactNo,
+        nic: c.nic,
+        address: c.address,
+      }))
+    );
   };
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export default function CustomersPage() {
     loadCustomers().catch(console.error);
   }, []);
 
-  /* ── add-customer submit ── */
+  /* add customer */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -56,9 +59,8 @@ export default function CustomersPage() {
       await createCustomer(form);
       setToast("Customer added ✔");
       setForm({ name: "", contactNo: "", nic: "", address: "" });
-      await loadCustomers(); // refresh grid
-    } catch (err) {
-      console.error(err);
+      await loadCustomers();
+    } catch {
       setToast("Failed to add customer");
     } finally {
       setSaving(false);
@@ -66,7 +68,7 @@ export default function CustomersPage() {
     }
   };
 
-  /* ── live filtering ── */
+  /* search filter */
   const data = useMemo(() => {
     if (!query.trim()) return rows;
     const q = query.toLowerCase();
@@ -79,12 +81,21 @@ export default function CustomersPage() {
     );
   }, [query, rows]);
 
-  /* ── UI ── */
+  /* export current view */
+  const exportToExcel = () => {
+    const exportRows = data.map(({ id, ...rest }) => rest);
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Customers");
+    XLSX.writeFile(wb, "customers.xlsx");
+  };
+
+  /* UI */
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-extrabold tracking-wide">CUSTOMERS</h1>
 
-      {/* add-customer form */}
+      {/* add form */}
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-5 gap-3 bg-sky-50 p-4 rounded-lg"
@@ -125,11 +136,10 @@ export default function CustomersPage() {
         </button>
       </form>
 
-      {/* toast */}
       {toast && <p className="text-sm font-medium text-green-700">{toast}</p>}
 
-      {/* search box */}
-      <div className="flex justify-end">
+      {/* toolbar: search + download */}
+      <div className="flex justify-between items-center">
         <input
           type="text"
           placeholder="Search by ID, name, phone, NIC…"
@@ -137,9 +147,16 @@ export default function CustomersPage() {
           onChange={(e) => setQuery(e.target.value)}
           className="w-72 rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
         />
+        <button
+          onClick={exportToExcel}
+          className="rounded-full bg-sky-600 p-2 text-white hover:bg-sky-700"
+          title="Download Excel"
+        >
+          <Download size={18} />
+        </button>
       </div>
 
-      {/* grid */}
+      {/* data grid */}
       <div style={{ height: 450, width: "100%" }}>
         {mounted && (
           <DataGrid

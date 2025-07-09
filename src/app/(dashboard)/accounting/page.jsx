@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from "react";
 import AccountingChart from "@/app/components/AccountingChart";
+import ItemBill from "@/app/components/ItemBill";
+import RepairBills from "@/app/components/RepairBills";
 import {
   getLastWeekRevenue,
   getLastMonthRevenue,
@@ -12,29 +14,29 @@ import {
   getLastWeekExpense,
   getLastMonthExpense,
   getLastYearExpense,
-} from "@/utils/expensesService"; // ← NEW imports
+} from "@/utils/expensesService";
 import { useAuth } from "../../providers";
 import { useRouter } from "next/navigation";
+import IncomeCard from "@/app/components/IncomeCard";
 
 export default function Page() {
   const { role } = useAuth();
   const router = useRouter();
+
   useEffect(() => {
-    if (role !== "admin") {
-      router.replace("/items");
-    }
+    if (role !== "admin") router.replace("/items");
   }, [role, router]);
   if (role !== "admin") return null;
 
   const [period, setPeriod] = useState("last-week");
+  const [table, setTable] = useState("ITEM"); //  ITEM | REPAIR
   const [income, setIncome] = useState(null);
   const [expense, setExpense] = useState(null);
 
-  /* ─── fetch income & expense whenever selector changes ─── */
+  /* fetch income & expense whenever selector changes */
   useEffect(() => {
     let alive = true;
-
-    const load = async () => {
+    (async () => {
       try {
         const [inc, exp] =
           period === "last-week"
@@ -47,22 +49,18 @@ export default function Page() {
           setIncome(Number(inc));
           setExpense(Number(exp));
         }
-      } catch (err) {
-        console.error("Accounting fetch error:", err);
+      } catch {
         if (alive) {
           setIncome(0);
           setExpense(0);
         }
       }
-    };
-
-    load();
+    })();
     return () => {
-      alive = false; // cancel setState on unmount / fast re-switch
+      alive = false;
     };
   }, [period]);
 
-  /* while either request is still pending, fall back to 0 for math */
   const incVal = income ?? 0;
   const expVal = expense ?? 0;
   const profit = incVal - expVal;
@@ -78,7 +76,6 @@ export default function Page() {
       {/* header */}
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold tracking-wide">ACCOUNTING</h1>
-
         <div className="flex items-center gap-4">
           <select
             value={period}
@@ -89,15 +86,10 @@ export default function Page() {
             <option value="last-month">Last Month</option>
             <option value="last-year">Last Year</option>
           </select>
-          {/* <button className="rounded bg-emerald-400/80 px-3 py-1 text-xs font-semibold text-white shadow">
-            EXPORT
-          </button> */}
         </div>
       </header>
-
-      {/* card */}
+      {/* summary card */}
       <div className="p-6 flex flex-col md:flex-row items-center w-full md:w-3/4 max-w-3xl mx-auto">
-        {/* summary list */}
         <ul className="w-full md:w-3/4 divide-y divide-sky-300 text-sm font-medium">
           {rows.map(({ label, value }) => (
             <li key={label} className="flex justify-between py-2">
@@ -108,12 +100,35 @@ export default function Page() {
             </li>
           ))}
         </ul>
-
-        {/* pie chart */}
         <div className="mt-2 w-full md:w-6/12 flex justify-center">
           <AccountingChart income={incVal} expenses={expVal} profit={profit} />
         </div>
       </div>
+      {/* profit cards (re-usable component) */}
+      <div className="flex flex-col md:flex-row gap-4 w-full md:w-3/4 max-w-3xl mx-auto">
+        <IncomeCard type="ITEM" period={period} />
+        <IncomeCard type="REPAIR" period={period} />
+      </div>
+      {/* table-type toggle */}
+      <div className="flex gap-2 self-end">
+        {["ITEM", "REPAIR"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTable(t)}
+            className={`rounded-full px-4 py-1 text-sm font-semibold ${
+              table === t ? "bg-sky-600 text-white" : "bg-sky-100 text-sky-700"
+            }`}
+          >
+            {t === "ITEM" ? "Item Income" : "Repair Income"}
+          </button>
+        ))}
+      </div>
+      {/* conditional table */}
+      {table === "ITEM" ? (
+        <ItemBill period={period} />
+      ) : (
+        <RepairBills period={period} />
+      )}
     </section>
   );
 }

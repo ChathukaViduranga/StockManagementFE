@@ -1,6 +1,9 @@
+// src/app/(dashboard)/repairs/page.jsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import * as XLSX from "xlsx";
+import { Download } from "lucide-react";
 import RepairsGrid from "@/app/components/RepairsGrid";
 import NewRepairForm from "@/app/components/NewRepairForm";
 import {
@@ -10,77 +13,103 @@ import {
 } from "@/utils/repairService";
 
 export default function RepairsPage() {
+  /* ───────── state ───────── */
   const [rows, setRows] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
 
-  const updateStatus = async (id, next) => {
-    try {
-      -(await changeRepairStatus(id, next)); // PUT /repairs/:id
-      -(
-        // rows were not refreshed ⇒ UI stayed stale
-        +(await changeRepairStatus(id, next))
-      ); // PUT /repairs/:id
-      +(await loadRepairs()); // ← fetch fresh list
-    } catch (err) {
-      console.error("Failed to update status:", err);
-    }
-  };
-
-  /* ────── fetch repairs once ────── */
+  /* ───────── helpers ───────── */
   const loadRepairs = async () => {
-    try {
-      const data = await getRepairs();
-      setRows(
-        data.map((r) => ({
-          id: r.id, // DataGrid key
-          no: r.id, // “Repair No”
-          customer: r.customer?.id ?? "-", // customer ID
-          name: r.deviceName,
-          status:
-            r.status?.charAt(0).toUpperCase() + // Pretty “Pending”
-            r.status?.slice(1).toLowerCase(),
-        }))
-      );
-    } catch (err) {
-      console.error("Error fetching repairs:", err);
-    }
+    const data = await getRepairs();
+    setRows(
+      data.map((r) => ({
+        id: r.id,
+        no: r.id,
+        customer: r.customer?.id ?? "-",
+        name: r.deviceName,
+        status:
+          r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase(),
+      }))
+    );
   };
 
-  useEffect(() => {
-    loadRepairs();
-  }, []);
-
-  /* ────── add new repair ────── */
   const addRepair = async (payload) => {
+    setSaving(true);
     try {
-      setSaving(true);
-      await createRepair(payload); // POST /repairs
-      await loadRepairs(); // refresh table
-    } catch (err) {
-      console.error("Failed to add repair:", err);
+      await createRepair(payload);
+      await loadRepairs();
     } finally {
       setSaving(false);
     }
   };
 
-  /* optional: newest first */
-  const sortedRows = useMemo(
-    () => [...rows].sort((a, b) => b.id - a.id),
-    [rows]
-  );
+  const updateStatus = async (id, next) => {
+    try {
+      await changeRepairStatus(id, next);
+      await loadRepairs();
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
 
+  /* ───────── lifecycle ───────── */
+  useEffect(() => {
+    loadRepairs().catch(console.error);
+  }, []);
+
+  /* ───────── search filter ───────── */
+  const filtered = useMemo(() => {
+    if (!query.trim()) return rows;
+    const q = query.toLowerCase();
+    return rows.filter(
+      (r) =>
+        r.no.toString().includes(q) ||
+        r.customer.toString().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        r.status.toLowerCase().includes(q)
+    );
+  }, [query, rows]);
+
+  /* ───────── export xlsx ───────── */
+  const exportExcel = () => {
+    const flat = filtered.map(({ id, ...rest }) => rest); // omit grid key
+    const ws = XLSX.utils.json_to_sheet(flat);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Repairs");
+    XLSX.writeFile(wb, "repairs.xlsx");
+  };
+
+  /* ───────── UI ───────── */
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-extrabold tracking-wide">REPAIRS</h1>
 
-      {/* New repair entry */}
+      {/* new-repair form */}
       <div className="rounded-lg border border-sky-200 bg-white p-4 shadow-sm">
         <NewRepairForm onAdd={addRepair} saving={saving} />
       </div>
 
-      {/* Repairs table */}
+      {/* toolbar */}
+      <div className="flex justify-between items-center">
+        <input
+          type="text"
+          placeholder="Search repairs…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-72 rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
+        />
+        <button
+          onClick={exportExcel}
+          className="rounded-full bg-sky-600 p-2 text-white hover:bg-sky-700"
+          title="Download Excel"
+        >
+          <Download size={18} />
+        </button>
+      </div>
+
+      {/* grid */}
       <div className="rounded-lg border border-sky-200 bg-white shadow-sm">
-        <RepairsGrid rows={sortedRows} onStatusChange={updateStatus} />
+        <RepairsGrid rows={filtered} onStatusChange={updateStatus} />
       </div>
     </section>
   );
