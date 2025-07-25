@@ -14,12 +14,25 @@ import {
 } from "@/components/ui/dialog";
 import { getAvailableItems } from "@/utils/ItemService";
 import * as XLSX from "xlsx";
-import { Download } from "lucide-react"; // ← icon
+import { Download } from "lucide-react";
+
+/* ────────── backend code → human label ────────── */
+const CATEGORY_LABELS = {
+  MP: "Mobile phone",
+  G: "Guitars",
+  S: "Speakers",
+  A: "Amps",
+  V: "Violin",
+  K: "Keyboard",
+  P: "Piano",
+  O: "Other",
+};
 
 /* ────────── grid columns ────────── */
 const columns = [
   { field: "no", headerName: "Item No", width: 110 },
   { field: "name", headerName: "Item Name", flex: 1, minWidth: 180 },
+  { field: "category", headerName: "Category", width: 140 },
   { field: "price", headerName: "Price (Rs)", width: 110, type: "number" },
   { field: "cost", headerName: "Cost (Rs)", width: 130, type: "number" },
 ];
@@ -27,6 +40,7 @@ const columns = [
 export default function ItemsGrid() {
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [selected, setSelect] = useState(null);
 
@@ -42,6 +56,8 @@ export default function ItemsGrid() {
             name: it.name,
             price: it.sellingPrice,
             cost: it.cost,
+            categoryCode: it.category,
+            category: CATEGORY_LABELS[it.category] ?? it.category,
             img: it.imagePath || "/placeholder.png",
             desc: it.description,
           }))
@@ -54,16 +70,25 @@ export default function ItemsGrid() {
 
   /* filter */
   const filteredRows = useMemo(() => {
-    if (!search.trim()) return rows;
-    const q = search.toLowerCase();
-    return rows.filter(
-      (r) => r.no.toString().includes(q) || r.name.toLowerCase().includes(q)
-    );
-  }, [search, rows]);
+    let filtered = rows;
+    if (categoryFilter) {
+      filtered = filtered.filter((r) => r.categoryCode === categoryFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (r) =>
+          r.no.toString().includes(q) ||
+          r.name.toLowerCase().includes(q) ||
+          r.category.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [search, rows, categoryFilter]);
 
   /* export */
   function exportToExcel() {
-    const data = filteredRows.map(({ id, ...rest }) => rest);
+    const data = filteredRows.map(({ id, categoryCode, ...rest }) => rest);
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Items");
@@ -73,14 +98,28 @@ export default function ItemsGrid() {
   return (
     <>
       {/* toolbar */}
-      <div className="mb-2 flex items-center justify-between">
-        <input
-          type="text"
-          placeholder="Search by ID or name…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-60 rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
-        />
+      <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            placeholder="Search by ID, name or category…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-60 rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="rounded border border-gray-300 px-3 py-1 text-sm outline-sky-400"
+          >
+            <option value="">All Categories</option>
+            {Object.entries(CATEGORY_LABELS).map(([code, label]) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           onClick={exportToExcel}
           className="rounded-full bg-sky-600 p-2 text-white hover:bg-sky-700"
@@ -151,6 +190,10 @@ export default function ItemsGrid() {
             <ul className="mt-4 space-y-1 text-sm">
               <li>
                 <span className="font-medium">Item No:</span> {selected.no}
+              </li>
+              <li>
+                <span className="font-medium">Category:</span>{" "}
+                {selected.category}
               </li>
               <li>
                 <span className="font-medium">Selling Price:</span> Rs.&nbsp;

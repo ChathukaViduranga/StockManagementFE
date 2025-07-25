@@ -25,8 +25,8 @@ const columns = [
     headerName: "Amount (Rs)",
     width: 140,
     type: "number",
-    valueFormatter: ({ value }) =>
-      value != null ? Number(value).toLocaleString("en-LK") : "",
+    renderCell: (params) =>
+      params.value != null ? Number(params.value).toLocaleString("en-LK") : "",
   },
   { field: "description", headerName: "Description", flex: 1, minWidth: 200 },
   { field: "category", headerName: "Category", width: 200 },

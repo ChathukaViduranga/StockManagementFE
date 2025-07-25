@@ -20,6 +20,7 @@ import { useAuth } from "../providers";
 
 const nav = [
   { href: "/add-item", label: "Add Items", icon: Package },
+  { href: "/add-user", label: "Add User", icon: UsersRound, adminOnly: true },
   { href: "/new-bill", label: "New Bill", icon: DollarSign },
   { href: "/items", label: "Items Available", icon: Home },
   { href: "/sales", label: "Daily Sales", icon: ShoppingCart, adminOnly: true },
@@ -81,9 +82,35 @@ export default function Sidebar() {
         </nav>
 
         <div className="mt-6 flex gap-4 pl-1">
-          <i className="ri-facebook-line text-xl cursor-pointer" />
-          <i className="ri-instagram-line text-xl cursor-pointer" />
-          <i className="ri-tiktok-line text-xl cursor-pointer" />
+          <a
+            href="https://www.facebook.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Facebook"
+            className="text-xl text-gray-700 hover:text-sky-700"
+          >
+            <i className="ri-facebook-line" />
+          </a>
+
+          <a
+            href="https://www.instagram.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className="text-xl text-gray-700 hover:text-sky-700"
+          >
+            <i className="ri-instagram-line" />
+          </a>
+
+          <a
+            href="https://www.tiktok.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="TikTok"
+            className="text-xl text-gray-700 hover:text-sky-700"
+          >
+            <i className="ri-tiktok-line" />
+          </a>
         </div>
       </aside>
     </>

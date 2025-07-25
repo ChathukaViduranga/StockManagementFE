@@ -5,7 +5,7 @@ import { useState } from "react";
 import { jsPDF } from "jspdf";
 import { RefreshCcw } from "lucide-react";
 
-import { getItemById, changeItemStatus } from "@/utils/ItemService";
+import { getAvailableItemsById, changeItemStatus } from "@/utils/ItemService";
 import {
   getCustomerById,
   getCustomerByContactNumber,
@@ -46,15 +46,34 @@ export default function NewBillPage() {
   const handleFetchItem = async () => {
     if (!bill.itemNo) return;
     try {
-      const it = await getItemById(bill.itemNo);
+      const it = await getAvailableItemsById(bill.itemNo);
+      if (!it || !it.id) {
+        alert(
+          "This item is currently not available for billing. Please check the item number or select another item."
+        );
+        setBill((b) => ({ ...b, itemName: "", price: "", itemCost: 0 }));
+        return;
+      }
       setBill((b) => ({
         ...b,
         itemName: it.name,
         price: it.sellingPrice,
         itemCost: it.cost,
       }));
-    } catch {
-      alert("Item not found");
+    } catch (err) {
+      // If error message is 'No AVAILABLE item found for id: ...'
+      if (
+        err?.response?.data &&
+        typeof err.response.data === "string" &&
+        err.response.data.includes("No AVAILABLE item")
+      ) {
+        alert(
+          "This item is currently not available for billing. Please check the item number or select another item."
+        );
+        setBill((b) => ({ ...b, itemName: "", price: "", itemCost: 0 }));
+      } else {
+        alert("Item not found");
+      }
     }
   };
 
@@ -92,6 +111,25 @@ export default function NewBillPage() {
     if (!bill.repairNo) return;
     try {
       const r = await getRepairById(bill.repairNo);
+      // Check status
+      if (!r || !r.status) {
+        alert("Repair not found");
+        return;
+      }
+      if (r.status === "Delivered") {
+        alert(
+          "This repair has already been delivered and cannot be billed again."
+        );
+        setBill((b) => ({ ...b, deviceName: "" }));
+        return;
+      }
+      if (r.status !== "Completed") {
+        alert(
+          "Repair is not completed yet. Only completed repairs can be billed."
+        );
+        setBill((b) => ({ ...b, deviceName: "" }));
+        return;
+      }
       setBill((b) => ({ ...b, deviceName: r.deviceName }));
       if (r.customer?.id) {
         const c = await getCustomerById(r.customer.id);

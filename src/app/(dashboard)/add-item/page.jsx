@@ -10,6 +10,7 @@ export default function AddItemPage() {
     sellingPrice: "",
     cost: "",
     description: "",
+    category: "MP", // default to Mobile phone
     file: null,
     preview: "",
   });
@@ -56,6 +57,7 @@ export default function AddItemPage() {
         sellingPrice: Number(form.sellingPrice),
         cost: Number(form.cost),
         description: form.description,
+        category: form.category, // send code
         imagePath: path, // <-------
       });
       setToast("Item saved ✔");
@@ -130,6 +132,27 @@ export default function AddItemPage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
               placeholder="Short details about the item"
             />
+          </div>
+
+          {/* category dropdown */}
+          <div>
+            <label className="mb-1 block text-sm font-medium">Category*</label>
+            <select
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              required
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-sky-400"
+            >
+              <option value="MP">Mobile phone</option>
+              <option value="G">Guitars</option>
+              <option value="S">Speakers</option>
+              <option value="A">Amps</option>
+              <option value="V">Violin</option>
+              <option value="K">Keyboard</option>
+              <option value="P">Piano</option>
+              <option value="O">Other</option>
+            </select>
           </div>
 
           {/* image file */}

@@ -77,3 +77,13 @@ export const getAvailableItems = async () => {
     throw err;
   }
 };
+
+export const getAvailableItemsById = async (id) => {
+  try {
+    const res = await axios.get(`${API}/items/available/${id}`);
+    return res.data; // object
+  } catch (err) {
+    console.error(`Error fetching available item ${id}:`, err);
+    throw err;
+  }
+};
